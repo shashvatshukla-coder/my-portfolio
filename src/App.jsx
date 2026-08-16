@@ -37,6 +37,27 @@ const skills = [
 
 const navItems = [["About", "about"], ["Work", "work"], ["Expertise", "expertise"], ["Contact", "contact"]];
 
+const socialLinks = [
+  {
+    code: "IG",
+    label: "Instagram",
+    handle: "@shashvat_shukla__",
+    url: "https://www.instagram.com/shashvat_shukla__?igsh=MWJmaDJzcmZtZDF3MQ==",
+  },
+  {
+    code: "GH",
+    label: "GitHub",
+    handle: "@shashvatshukla-coder",
+    url: "https://github.com/shashvatshukla-coder",
+  },
+  {
+    code: "IN",
+    label: "LinkedIn",
+    handle: "Shashvat Shukla",
+    url: "https://www.linkedin.com/in/shashvat-shukla-03225b397",
+  },
+];
+
 function ArrowIcon() {
   return <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 15 15 5M7 5h8v8" /></svg>;
 }
@@ -219,14 +240,25 @@ function App() {
             <p className="eyebrow"><span /> SYSTEM READY · LET’S BUILD</p>
             <h2 id="contact-title">Have a bold idea?<br /><em>Let’s make it real.</em></h2>
             <p className="contact-copy">I’m open to collaborations, ambitious projects, and conversations about technology that moves things forward.</p>
-            <a className="button button-primary" href="https://www.linkedin.com/in/shashvat-shukla-03225b397" target="_blank" rel="noreferrer">Start a conversation <ArrowIcon /></a>
+            <div className="social-links" aria-label="Social profiles">
+              {socialLinks.map((social) => (
+                <a href={social.url} target="_blank" rel="noreferrer" key={social.label}>
+                  <span className="social-code">{social.code}</span>
+                  <span className="social-copy"><small>{social.label}</small><strong>{social.handle}</strong></span>
+                  <ArrowIcon />
+                </a>
+              ))}
+            </div>
           </Reveal>
         </section>
       </main>
 
       <footer className="site-footer">
         <a className="brand" href="#top"><span className="brand-mark">S</span><span className="brand-copy"><strong>SHASHVAT</strong><small>AI + WEB DEVELOPER</small></span></a>
-        <p>Designed with intent. Engineered with React.</p>
+        <div className="footer-socials">
+          <a href="https://www.instagram.com/shashvat_shukla__?igsh=MWJmaDJzcmZtZDF3MQ==" target="_blank" rel="noreferrer">Instagram</a>
+          <a href="https://github.com/shashvatshukla-coder" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
         <p>© {new Date().getFullYear()} Shashvat Shukla</p>
       </footer>
     </div>
