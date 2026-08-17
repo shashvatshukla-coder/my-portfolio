@@ -41,6 +41,6 @@ Variables**:
 GEMINI_API_KEY=your-google-ai-studio-api-key
 ```
 
-The server defaults to `gemini-3.6-flash`. `GEMINI_MODEL` can optionally override
+The server defaults to `gemini-3.7-flash`. `GEMINI_MODEL` can optionally override
 that model. Apply the variable to Production and Preview, save it, and redeploy.
 Never put the API key in a `VITE_` variable or commit it to GitHub.

@@ -1,4 +1,4 @@
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.7-flash";
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 1200;
 
