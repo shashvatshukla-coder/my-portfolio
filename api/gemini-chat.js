@@ -1,6 +1,8 @@
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.7-flash";
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 1200;
+const GEMINI_RETRY_DELAYS_MS = [0, 700, 1600];
+const RETRYABLE_GEMINI_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 const SHASHVAT_PERSONA = `
 You are "Shashvat AI", a clearly disclosed AI assistant for Shashvat Shukla's portfolio.
@@ -33,6 +35,8 @@ Voice and behavior:
 
 const rateLimitStore = globalThis.__shashvatAiRateLimits || new Map();
 globalThis.__shashvatAiRateLimits = rateLimitStore;
+
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 const checkRateLimit = (request) => {
   const forwarded = request.headers?.["x-forwarded-for"] || request.headers?.get?.("x-forwarded-for") || "unknown";
@@ -98,26 +102,42 @@ export default async function handler(request, response) {
   }
 
   try {
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODEL)}:generateContent`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SHASHVAT_PERSONA }] },
-          contents: messages,
-          generationConfig: { maxOutputTokens: 700 },
-        }),
-      },
-    );
+    const requestUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODEL)}:generateContent`;
+    const requestOptions = {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SHASHVAT_PERSONA }] },
+        contents: messages,
+        generationConfig: { maxOutputTokens: 700 },
+      }),
+    };
 
-    const data = await geminiResponse.json().catch(() => ({}));
+    let geminiResponse;
+    let data = {};
+    for (let attempt = 0; attempt < GEMINI_RETRY_DELAYS_MS.length; attempt += 1) {
+      if (GEMINI_RETRY_DELAYS_MS[attempt] > 0) {
+        await wait(GEMINI_RETRY_DELAYS_MS[attempt]);
+      }
+
+      try {
+        geminiResponse = await fetch(requestUrl, requestOptions);
+        data = await geminiResponse.json().catch(() => ({}));
+      } catch (error) {
+        if (attempt === GEMINI_RETRY_DELAYS_MS.length - 1) throw error;
+        continue;
+      }
+
+      if (geminiResponse.ok || !RETRYABLE_GEMINI_STATUSES.has(geminiResponse.status)) break;
+    }
+
     if (!geminiResponse.ok) {
       console.error("Gemini API error:", geminiResponse.status, data?.error?.message || "Unknown error");
-      const message = geminiResponse.status === 429
-        ? "Shashvat AI is busy right now. Please try again in a moment."
+      const isBusy = geminiResponse.status === 429 || geminiResponse.status === 503;
+      const message = isBusy
+        ? "Shashvat AI is temporarily busy after several retries. Please try again shortly."
         : "Shashvat AI could not respond. Please try again.";
-      return response.status(geminiResponse.status === 429 ? 429 : 502).json({ error: message });
+      return response.status(isBusy ? geminiResponse.status : 502).json({ error: message });
     }
 
     const reply = data?.candidates?.[0]?.content?.parts
