@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const projects = [
   {
@@ -138,12 +138,23 @@ function ProjectCard({ project, index }) {
 }
 
 const emptyChatForm = { name: "", email: "", message: "", website: "" };
+const firstAiMessage = {
+  role: "assistant",
+  text: "Hey — I’m Shashvat AI, an AI version of this portfolio. Ask me about the projects, skills, or how we could build something useful together.",
+};
+const suggestedQuestions = ["What does Shashvat build?", "Tell me about Rivayat", "How can we collaborate?"];
 
 function ChatWidget() {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState("ai");
   const [form, setForm] = useState(emptyChatForm);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [aiMessages, setAiMessages] = useState([firstAiMessage]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiStatus, setAiStatus] = useState("idle");
+  const [aiError, setAiError] = useState("");
+  const messageListRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -153,6 +164,12 @@ function ChatWidget() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open]);
+
+  useEffect(() => {
+    if (mode === "ai" && messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    }
+  }, [aiMessages, aiStatus, mode]);
 
   const updateField = (event) => {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -184,6 +201,40 @@ function ChatWidget() {
     setError("");
   };
 
+  const sendAiMessage = async (event, suggestedText) => {
+    event?.preventDefault();
+    const text = String(suggestedText || aiInput).trim();
+    if (!text || aiStatus === "sending") return;
+
+    const nextMessages = [...aiMessages, { role: "user", text }];
+    setAiMessages(nextMessages);
+    setAiInput("");
+    setAiStatus("sending");
+    setAiError("");
+
+    try {
+      const response = await fetch("/api/gemini-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: nextMessages.slice(-12) }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Shashvat AI could not respond.");
+      setAiMessages((current) => [...current, { role: "assistant", text: result.reply }]);
+      setAiStatus("idle");
+    } catch (requestError) {
+      setAiStatus("error");
+      setAiError(requestError.message || "The AI connection is unavailable. Please try again.");
+    }
+  };
+
+  const resetAiChat = () => {
+    setAiMessages([firstAiMessage]);
+    setAiInput("");
+    setAiError("");
+    setAiStatus("idle");
+  };
+
   return (
     <aside className={`chat-widget ${open ? "is-open" : ""}`}>
       {open && (
@@ -191,13 +242,43 @@ function ChatWidget() {
           <div className="chat-header">
             <span className="chat-avatar">S</span>
             <div>
-              <h2 id="chat-title">Chat with Shashvat</h2>
-              <p><i /> Messages go directly to my inbox</p>
+              <h2 id="chat-title">{mode === "ai" ? "Shashvat AI" : "Message Shashvat"}</h2>
+              <p><i /> {mode === "ai" ? "AI persona · not the real Shashvat" : "Messages go directly to my inbox"}</p>
             </div>
             <button type="button" className="chat-close" onClick={() => setOpen(false)} aria-label="Close chat">×</button>
           </div>
 
-          {status === "success" ? (
+          <div className="chat-tabs" role="tablist" aria-label="Chat options">
+            <button type="button" role="tab" aria-selected={mode === "ai"} className={mode === "ai" ? "is-active" : ""} onClick={() => setMode("ai")}>Ask Shashvat AI</button>
+            <button type="button" role="tab" aria-selected={mode === "message"} className={mode === "message" ? "is-active" : ""} onClick={() => setMode("message")}>Send a message</button>
+          </div>
+
+          {mode === "ai" ? (
+            <div className="ai-chat">
+              <div className="ai-messages" ref={messageListRef} aria-live="polite">
+                {aiMessages.map((message, index) => (
+                  <div className={`ai-bubble ${message.role}`} key={`${message.role}-${index}`}>
+                    <span>{message.role === "assistant" ? "AI" : "YOU"}</span>
+                    <p>{message.text}</p>
+                  </div>
+                ))}
+                {aiStatus === "sending" && (
+                  <div className="ai-bubble assistant ai-typing"><span>AI</span><p><i /><i /><i /></p></div>
+                )}
+              </div>
+              {aiMessages.length === 1 && (
+                <div className="ai-suggestions">
+                  {suggestedQuestions.map((question) => <button type="button" onClick={() => sendAiMessage(null, question)} key={question}>{question}</button>)}
+                </div>
+              )}
+              {aiError && <div className="ai-error" role="alert"><span>{aiError}</span><button type="button" onClick={() => { setAiError(""); setAiStatus("idle"); }}>Dismiss</button></div>}
+              <form className="ai-composer" onSubmit={sendAiMessage}>
+                <input value={aiInput} onChange={(event) => setAiInput(event.target.value)} maxLength="1200" placeholder="Ask about Shashvat…" aria-label="Message Shashvat AI" />
+                <button type="submit" disabled={!aiInput.trim() || aiStatus === "sending"} aria-label="Send to Shashvat AI"><ArrowIcon /></button>
+              </form>
+              <div className="ai-footer"><small>Powered by Gemini · AI responses may be inaccurate</small><button type="button" onClick={resetAiChat}>Reset</button></div>
+            </div>
+          ) : status === "success" ? (
             <div className="chat-success" role="status">
               <span>✓</span>
               <h3>Message transmitted.</h3>
@@ -235,9 +316,9 @@ function ChatWidget() {
         </div>
       )}
 
-      <button className="chat-launcher" type="button" onClick={() => setOpen((current) => !current)} aria-expanded={open} aria-label={open ? "Close Chat with Shashvat" : "Open Chat with Shashvat"}>
+      <button className="chat-launcher" type="button" onClick={() => setOpen((current) => !current)} aria-expanded={open} aria-label={open ? "Close Shashvat AI" : "Open Shashvat AI"}>
         <span className="chat-launcher-icon">{open ? "×" : "//"}</span>
-        <span><strong>{open ? "Close chat" : "Chat with Shashvat"}</strong><small>{open ? "Return to portfolio" : "Send me a message"}</small></span>
+        <span><strong>{open ? "Close chat" : "Talk to Shashvat AI"}</strong><small>{open ? "Return to portfolio" : "AI persona + direct messages"}</small></span>
       </button>
     </aside>
   );
