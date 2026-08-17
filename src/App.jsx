@@ -137,6 +137,112 @@ function ProjectCard({ project, index }) {
   );
 }
 
+const emptyChatForm = { name: "", email: "", message: "", website: "" };
+
+function ChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyChatForm);
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
+
+  const updateField = (event) => {
+    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
+
+  const submitMessage = async (event) => {
+    event.preventDefault();
+    setStatus("sending");
+    setError("");
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Message could not be sent.");
+      setStatus("success");
+      setForm(emptyChatForm);
+    } catch (submitError) {
+      setStatus("error");
+      setError(submitError.message || "Something went wrong. Please try again.");
+    }
+  };
+
+  const startAnotherMessage = () => {
+    setStatus("idle");
+    setError("");
+  };
+
+  return (
+    <aside className={`chat-widget ${open ? "is-open" : ""}`}>
+      {open && (
+        <div className="chat-panel" role="dialog" aria-modal="false" aria-labelledby="chat-title">
+          <div className="chat-header">
+            <span className="chat-avatar">S</span>
+            <div>
+              <h2 id="chat-title">Chat with Shashvat</h2>
+              <p><i /> Messages go directly to my inbox</p>
+            </div>
+            <button type="button" className="chat-close" onClick={() => setOpen(false)} aria-label="Close chat">×</button>
+          </div>
+
+          {status === "success" ? (
+            <div className="chat-success" role="status">
+              <span>✓</span>
+              <h3>Message transmitted.</h3>
+              <p>Thanks for reaching out. Your message is now in Shashvat’s inbox.</p>
+              <button type="button" onClick={startAnotherMessage}>Send another message</button>
+            </div>
+          ) : (
+            <form className="chat-form" onSubmit={submitMessage}>
+              <div className="chat-message">
+                <span>SS</span>
+                <p>Hey! Tell me about your idea, project, or collaboration.</p>
+              </div>
+              <label>
+                <span>Your name</span>
+                <input name="name" value={form.name} onChange={updateField} maxLength="80" autoComplete="name" placeholder="Enter your name" required />
+              </label>
+              <label>
+                <span>Your email</span>
+                <input type="email" name="email" value={form.email} onChange={updateField} maxLength="160" autoComplete="email" placeholder="you@example.com" required />
+              </label>
+              <label>
+                <span>Your message</span>
+                <textarea name="message" value={form.message} onChange={updateField} minLength="10" maxLength="3000" rows="4" placeholder="What would you like to build?" required />
+              </label>
+              <label className="chat-honeypot" aria-hidden="true">
+                Website<input name="website" value={form.website} onChange={updateField} tabIndex="-1" autoComplete="off" />
+              </label>
+              {error && <p className="chat-error" role="alert">{error}</p>}
+              <button className="chat-submit" type="submit" disabled={status === "sending"}>
+                {status === "sending" ? "Transmitting…" : "Send message"}<ArrowIcon />
+              </button>
+              <small className="chat-privacy">Your details are used only to reply to this message.</small>
+            </form>
+          )}
+        </div>
+      )}
+
+      <button className="chat-launcher" type="button" onClick={() => setOpen((current) => !current)} aria-expanded={open} aria-label={open ? "Close Chat with Shashvat" : "Open Chat with Shashvat"}>
+        <span className="chat-launcher-icon">{open ? "×" : "//"}</span>
+        <span><strong>{open ? "Close chat" : "Chat with Shashvat"}</strong><small>{open ? "Return to portfolio" : "Send me a message"}</small></span>
+      </button>
+    </aside>
+  );
+}
+
 function App() {
   useEffect(() => {
     const elements = document.querySelectorAll(".reveal");
@@ -252,6 +358,8 @@ function App() {
           </Reveal>
         </section>
       </main>
+
+      <ChatWidget />
 
       <footer className="site-footer">
         <a className="brand" href="#top"><span className="brand-mark">S</span><span className="brand-copy"><strong>SHASHVAT</strong><small>AI + WEB DEVELOPER</small></span></a>
