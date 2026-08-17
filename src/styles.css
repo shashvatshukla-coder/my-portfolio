@@ -118,7 +118,7 @@ nav a:hover, nav a:focus-visible { color: var(--cyan); }
 .eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 24px; color: var(--cyan); font-family: "JetBrains Mono", monospace; font-size: clamp(.66rem, 1vw, .78rem); letter-spacing: .12em; text-transform: uppercase; }
 .eyebrow span { width: 34px; height: 1px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
 h1, h2, h3, p { margin-top: 0; }
-h1 { max-width: 830px; margin-bottom: 28px; font-size: clamp(3.6rem, 7vw, 7.5rem); font-weight: 600; letter-spacing: -.07em; line-height: .92; }
+h1 { max-width: 830px; margin-bottom: 28px; font-size: clamp(3.6rem, 7vw, 7.5rem); font-weight: 600; letter-spacing: -.065em; line-height: 1.04; }
 h1 > span, h2 em { color: transparent; font-style: normal; background: linear-gradient(110deg, var(--cyan), #9eaaff 58%, var(--violet)); -webkit-background-clip: text; background-clip: text; }
 .hero-intro { max-width: 620px; color: var(--muted); font-size: clamp(1rem, 1.35vw, 1.16rem); }
 .hero-intro strong { color: #dfe7f3; font-weight: 700; }
