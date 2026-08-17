@@ -361,7 +361,11 @@ h2 { margin-bottom: 0; font-size: clamp(2.6rem, 5.7vw, 6.6rem); font-weight: 500
 @media (max-width: 760px) {
   .brand-copy { display: none; }
   .hero { min-height: auto; }
-  h1 { font-size: clamp(3.35rem, 15vw, 5.7rem); }
+  h1 {
+    font-size: clamp(2.85rem, 14vw, 5.7rem);
+    letter-spacing: -.055em;
+    line-height: 1.06;
+  }
   .hero-meta { justify-content: space-between; gap: 12px; }
   .hero-meta span { font-size: .56rem; }
   .tech-visual { min-height: 430px; }
