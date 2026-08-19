@@ -8,6 +8,8 @@ const projects = [
     description: "An intelligent clinical workspace that turns symptoms into structured predictions and clear, printable reports.",
     url: "https://disease-prediction-backend.vercel.app/",
     stack: ["Machine Learning", "Web App", "Vercel"],
+    role: "AI product · Full-stack delivery",
+    outcome: "Structured predictions and printable reports in one workflow.",
     accent: "cyan",
   },
   {
@@ -17,6 +19,8 @@ const projects = [
     description: "A fast, focused sports experience built for Indian audiences with an energetic visual identity.",
     url: "https://india-branded-sports.vercel.app/",
     stack: ["Frontend", "Branding", "Responsive"],
+    role: "Frontend · Experience design",
+    outcome: "A responsive brand experience designed for fast exploration.",
     accent: "violet",
   },
   {
@@ -26,6 +30,8 @@ const projects = [
     description: "A distinctive commerce experience blending strong product storytelling with an identity rooted in tradition.",
     url: "https://rivayat.shop/",
     stack: ["E-commerce", "UX Design", "Identity"],
+    role: "Commerce · Product experience",
+    outcome: "Product discovery and cultural storytelling in one storefront.",
     accent: "orange",
   },
 ];
@@ -58,6 +64,10 @@ const socialLinks = [
   },
 ];
 
+const openPortfolioChat = (mode) => {
+  window.dispatchEvent(new CustomEvent("open-shashvat-chat", { detail: { mode } }));
+};
+
 function ArrowIcon() {
   return <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 15 15 5M7 5h8v8" /></svg>;
 }
@@ -69,6 +79,7 @@ function Reveal({ children, className = "", delay = 0 }) {
 function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState("about");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -76,6 +87,29 @@ function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    const sections = navItems
+      .map(([, id]) => document.getElementById(id))
+      .filter(Boolean);
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveSection(visible.target.id);
+    }, { rootMargin: "-25% 0px -60%", threshold: [0.05, 0.2, 0.5] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeMenu = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", closeMenu);
+    return () => window.removeEventListener("keydown", closeMenu);
+  }, [open]);
 
   return (
     <header className={`site-header ${scrolled ? "is-scrolled" : ""}`}>
@@ -88,7 +122,7 @@ function Header() {
       </button>
       <nav id="main-nav" className={open ? "is-open" : ""} aria-label="Main navigation">
         {navItems.map(([label, id], index) => (
-          <a href={`#${id}`} key={id} onClick={() => setOpen(false)}><span>0{index + 1}</span>{label}</a>
+          <a href={`#${id}`} className={activeSection === id ? "is-active" : ""} aria-current={activeSection === id ? "location" : undefined} key={id} onClick={() => setOpen(false)}><span>0{index + 1}</span>{label}</a>
         ))}
       </nav>
       <a className="status-pill" href="#contact"><span /> Available to build</a>
@@ -107,9 +141,9 @@ function TechVisual() {
       <div className="terminal-card">
         <div className="terminal-top"><span /><span /><span /><small>builder.tsx</small></div>
         <code>
-          <span><b>const</b> idea = <i>"ambitious"</i>;</span>
-          <span><b>await</b> build(idea);</span>
-          <span className="terminal-success">✓ product shipped</span>
+          <span><b>const</b> brief = <i>"real problem"</i>;</span>
+          <span><b>await</b> engineer(brief);</span>
+          <span className="terminal-success">✓ production ready</span>
         </code>
       </div>
     </div>
@@ -120,16 +154,18 @@ function ProjectCard({ project, index }) {
   return (
     <Reveal className={`project-card accent-${project.accent}`} delay={index * 120}>
       <article>
-        <div className="project-topline"><span>{project.category}</span><span>{project.number} / 03</span></div>
+        <div className="project-topline"><span>{project.category}</span><span>LIVE · {project.number} / 03</span></div>
         <div className="project-art" aria-hidden="true">
           <div className="project-grid-lines" /><span className="project-orb" />
           <span className="project-code">{`{ ${project.number} }`}</span><span className="project-scan" />
         </div>
         <div className="project-content">
+          <p className="project-role">{project.role}</p>
           <h3>{project.title}</h3><p>{project.description}</p>
+          <div className="project-outcome"><span>DELIVERED</span><p>{project.outcome}</p></div>
           <div className="project-footer">
             <ul aria-label={`${project.title} technologies`}>{project.stack.map((item) => <li key={item}>{item}</li>)}</ul>
-            <a href={project.url} target="_blank" rel="noreferrer" aria-label={`Open ${project.title}`}><ArrowIcon /></a>
+            <a href={project.url} target="_blank" rel="noreferrer" aria-label={`View live ${project.title}`}><span>View live</span><ArrowIcon /></a>
           </div>
         </div>
       </article>
@@ -164,6 +200,15 @@ function ChatWidget() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open]);
+
+  useEffect(() => {
+    const handleOpenRequest = (event) => {
+      setMode(event.detail?.mode === "message" ? "message" : "ai");
+      setOpen(true);
+    };
+    window.addEventListener("open-shashvat-chat", handleOpenRequest);
+    return () => window.removeEventListener("open-shashvat-chat", handleOpenRequest);
+  }, []);
 
   useEffect(() => {
     if (mode === "ai" && messageListRef.current) {
@@ -349,23 +394,24 @@ function App() {
   }, []);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" id="top">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <div className="cursor-glow" aria-hidden="true" />
       <Header />
-      <main id="top">
+      <main id="main-content">
         <section className="hero section-shell" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <p className="eyebrow"><span /> AWS Certified AI Practitioner</p>
-            <h1 id="hero-title">I engineer <br /><span>intelligent</span> ideas.</h1>
-            <p className="hero-intro">I’m <strong>Shashvat Shukla</strong>, a developer turning AI, clean code, and sharp product thinking into digital experiences that feel one step ahead.</p>
+            <p className="eyebrow"><span /> AWS Certified · AI + Web Developer</p>
+            <h1 id="hero-title">I build intelligent products for <span>real-world use.</span></h1>
+            <p className="hero-intro">I’m <strong>Shashvat Shukla</strong>, an AWS Certified AI Practitioner creating AI tools, modern web applications, and digital commerce experiences—from product thinking to production deployment.</p>
             <div className="hero-actions">
-              <a className="button button-primary" href="#work">Explore my work <ArrowIcon /></a>
-              <a className="button button-secondary" href="https://www.linkedin.com/in/shashvat-shukla-03225b397" target="_blank" rel="noreferrer">Let’s connect</a>
+              <a className="button button-primary" href="#work">View selected work <ArrowIcon /></a>
+              <button className="button button-secondary" type="button" onClick={() => openPortfolioChat("message")}>Start a project</button>
             </div>
             <div className="hero-meta" aria-label="Portfolio highlights">
               <div><strong>03</strong><span>Live products</span></div>
-              <div><strong>AI</strong><span>Core focus</span></div>
-              <div><strong>∞</strong><span>Ideas loading</span></div>
+              <div><strong>AWS</strong><span>AI certified</span></div>
+              <div><strong>FULL</strong><span>Idea to launch</span></div>
             </div>
           </div>
           <TechVisual />
@@ -379,12 +425,18 @@ function App() {
         <section className="about section-shell" id="about" aria-labelledby="about-title">
           <Reveal className="section-label"><span>01</span><p>ABOUT / PROFILE</p></Reveal>
           <div className="about-layout">
-            <Reveal><h2 id="about-title">Building at the intersection of <em>logic</em> and <em>imagination.</em></h2></Reveal>
+            <Reveal><h2 id="about-title">Product thinking backed by <em>technical execution.</em></h2></Reveal>
             <Reveal className="about-copy" delay={100}>
-              <p>I create practical systems that connect intelligent technology with interfaces people actually enjoy using. From prediction platforms to commerce and branded experiences, every build starts with a real problem and ends with a clear product.</p>
+              <p>I create practical systems that connect intelligent technology with interfaces people enjoy using. Every project starts with a clear problem, moves through focused engineering, and ends as a polished product people can access.</p>
+              <div className="credential-card">
+                <span className="credential-mark">AWS</span>
+                <span><small>VERIFIED CREDENTIAL</small><strong>AWS Certified AI Practitioner</strong></span>
+                <i>✓</i>
+              </div>
               <div className="identity-row">
                 <div><span>FOCUS_01</span><strong>AI products that solve real problems</strong></div>
                 <div><span>FOCUS_02</span><strong>Fast, memorable web experiences</strong></div>
+                <div><span>FOCUS_03</span><strong>Reliable delivery from concept to cloud</strong></div>
               </div>
             </Reveal>
           </div>
@@ -394,7 +446,7 @@ function App() {
           <Reveal className="section-label"><span>02</span><p>SELECTED / PROJECTS</p></Reveal>
           <div className="section-heading">
             <Reveal><h2 id="work-title">Work that is <em>live, useful,</em> and built to last.</h2></Reveal>
-            <Reveal delay={100}><p>Three projects. Three different problems. One standard: make it work beautifully.</p></Reveal>
+            <Reveal delay={100}><p>Selected products across AI, digital brands, and commerce—each live, responsive, and built around a clear user need.</p></Reveal>
           </div>
           <div className="project-list">{projects.map((project, index) => <ProjectCard project={project} index={index} key={project.title} />)}</div>
         </section>
@@ -409,7 +461,7 @@ function App() {
             <div className="capability-grid">
               {[
                 ["01", "Think", "Product strategy", "Turning a rough idea into a focused, buildable experience."],
-                ["02", "Train", "AI & models", "Using data and prediction to make software genuinely smarter."],
+                ["02", "Engineer", "AI systems", "Using data, models, and careful product design to make software genuinely useful."],
                 ["03", "Craft", "React interfaces", "Responsive, accessible experiences with a distinct visual system."],
                 ["04", "Ship", "Cloud deployment", "Taking products from local code to reliable live experiences."],
               ].map(([number, verb, title, copy], index) => (
@@ -426,7 +478,11 @@ function App() {
           <Reveal>
             <p className="eyebrow"><span /> SYSTEM READY · LET’S BUILD</p>
             <h2 id="contact-title">Have a bold idea?<br /><em>Let’s make it real.</em></h2>
-            <p className="contact-copy">I’m open to collaborations, ambitious projects, and conversations about technology that moves things forward.</p>
+            <p className="contact-copy">Share the problem, goal, or early idea. You can message me directly or explore the portfolio with Shashvat AI first.</p>
+            <div className="contact-actions">
+              <button className="button button-primary" type="button" onClick={() => openPortfolioChat("message")}>Send a project brief <ArrowIcon /></button>
+              <button className="button button-secondary" type="button" onClick={() => openPortfolioChat("ai")}>Ask Shashvat AI</button>
+            </div>
             <div className="social-links" aria-label="Social profiles">
               {socialLinks.map((social) => (
                 <a href={social.url} target="_blank" rel="noreferrer" key={social.label}>
@@ -447,6 +503,7 @@ function App() {
         <div className="footer-socials">
           <a href="https://www.instagram.com/shashvat_shukla__?igsh=MWJmaDJzcmZtZDF3MQ==" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://github.com/shashvatshukla-coder" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://www.linkedin.com/in/shashvat-shukla-03225b397" target="_blank" rel="noreferrer">LinkedIn</a>
         </div>
         <p>© {new Date().getFullYear()} Shashvat Shukla</p>
       </footer>
